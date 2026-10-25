@@ -1,0 +1,320 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidAdminVaultId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidWorkspaceId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidCapId(id) {
+      return id is string && id.size() == 68 && id.matches('^cap_[a-f0-9]{64}$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Zero-DB-read admin check safe for list queries (Pillar 8 Cost-Optimization)
+    function isBootstrappedAdmin() {
+      return isVerifiedEmail() && request.auth.token.email.lower() == 'kp7931374@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedEmail() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'photoURL', 'workspaceId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'workspaceId', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 && data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
+        data.displayName is string && data.displayName.size() <= 100 &&
+        data.photoURL is string && data.photoURL.size() <= 500 &&
+        data.workspaceId is string && data.workspaceId.size() >= 1 && data.workspaceId.size() <= 64 && data.workspaceId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSecurityEvent(data) {
+      return data.keys().hasAll(['ownerUid', 'eventType', 'summary', 'createdAt']) &&
+        data.keys().hasOnly(['ownerUid', 'eventType', 'summary', 'createdAt']) &&
+        data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && data.ownerUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.eventType is string && data.eventType.size() >= 1 && data.eventType.size() <= 40 &&
+        data.eventType in ['login', 'account_added', 'account_removed', 'deposit_created', 'deposit_verified', 'withdraw_executed', 'key_rotated'] &&
+        data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 240 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidVaultWorkspace(data) {
+      return data.keys().hasAll(['workspaceId', 'ownerUid', 'encryptedState', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['workspaceId', 'ownerUid', 'encryptedState', 'createdAt', 'updatedAt']) &&
+        data.workspaceId is string && data.workspaceId.size() >= 1 && data.workspaceId.size() <= 64 && data.workspaceId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && data.ownerUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.encryptedState is string && data.encryptedState.size() >= 16 && data.encryptedState.size() <= 500000 && data.encryptedState.matches('^enc:v1:[A-Za-z0-9+/=:]+$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGatewayCapability(data) {
+      return data.keys().hasAll(['capId', 'ownerUid', 'workspaceId', 'encryptedCapability', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['capId', 'ownerUid', 'workspaceId', 'encryptedCapability', 'createdAt', 'updatedAt']) &&
+        data.capId is string && data.capId.size() == 68 && data.capId.matches('^cap_[a-f0-9]{64}$') &&
+        data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && data.ownerUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.workspaceId is string && data.workspaceId.size() >= 1 && data.workspaceId.size() <= 64 && data.workspaceId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.encryptedCapability is string && data.encryptedCapability.size() >= 16 && data.encryptedCapability.size() <= 500000 && data.encryptedCapability.matches('^enc:v1:[A-Za-z0-9+/=:]+$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminVaultAccount(data) {
+      return data.keys().hasAll(['vaultId', 'workspaceId', 'ownerUid', 'encryptedAccount', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['vaultId', 'workspaceId', 'ownerUid', 'encryptedAccount', 'createdAt', 'updatedAt']) &&
+        data.vaultId is string && data.vaultId.size() >= 3 && data.vaultId.size() <= 128 && data.vaultId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.workspaceId is string && data.workspaceId.size() >= 1 && data.workspaceId.size() <= 64 && data.workspaceId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && data.ownerUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.encryptedAccount is string && data.encryptedAccount.size() >= 16 && data.encryptedAccount.size() <= 200000 && data.encryptedAccount.matches('^enc:v1:[A-Za-z0-9+/=:]+$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // System-only Admin Registry
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && isValidId(adminUid) && (request.auth.uid == adminUid || isAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // Isolated User Profile (PII guarded)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isVerifiedEmail() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().email == request.auth.token.email &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() && isValidUserProfile(incoming()) && (
+        (
+          isVerifiedEmail() &&
+          isValidId(userId) &&
+          request.auth.uid == userId &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'workspaceId', 'updatedAt']) &&
+          incoming().uid == existing().uid &&
+          incoming().email == existing().email &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        ) ||
+        (
+          isValidId(userId) &&
+          isAdmin() &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'workspaceId', 'updatedAt']) &&
+          incoming().uid == existing().uid &&
+          incoming().email == existing().email &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        )
+      );
+
+      allow delete: if isValidId(userId) && isAdmin();
+
+      // Master-Gated Immutable Per-User Security Events
+      match /events/{eventId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(eventId) &&
+          (isAdmin() || (resource != null && request.auth.uid == userId && existing().ownerUid == request.auth.uid));
+
+        allow list: if isBootstrappedAdmin() || (
+          isSignedIn() &&
+          isValidId(userId) &&
+          request.auth.uid == userId &&
+          existing().ownerUid == request.auth.uid
+        );
+
+        allow create: if isVerifiedEmail() &&
+          isValidId(userId) &&
+          isValidId(eventId) &&
+          request.auth.uid == userId &&
+          isValidSecurityEvent(incoming()) &&
+          incoming().ownerUid == request.auth.uid &&
+          incoming().ownerUid == userId &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(eventId) && isAdmin();
+      }
+    }
+
+    // Server-Encrypted Workspace State (Isolated strictly to ownerUid or Admin; undeletable)
+    match /vault_workspaces/{workspaceId} {
+      allow get: if isSignedIn() &&
+        isValidWorkspaceId(workspaceId) &&
+        (isAdmin() || (resource != null && existing().ownerUid == request.auth.uid));
+
+      allow list: if isBootstrappedAdmin() || (
+        isSignedIn() &&
+        existing().ownerUid == request.auth.uid
+      );
+
+      allow create: if isVerifiedEmail() &&
+        isValidWorkspaceId(workspaceId) &&
+        isValidVaultWorkspace(incoming()) &&
+        incoming().workspaceId == workspaceId &&
+        (incoming().ownerUid == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() && isValidVaultWorkspace(incoming()) && (
+        (
+          isVerifiedEmail() &&
+          isValidWorkspaceId(workspaceId) &&
+          existing().ownerUid == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedState', 'updatedAt']) &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        ) ||
+        (
+          isValidWorkspaceId(workspaceId) &&
+          isAdmin() &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedState', 'updatedAt']) &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        )
+      );
+
+      allow delete: if false;
+    }
+
+    // 256-Bit HMAC Capability Documents (AES-256-GCM Ciphertext Only, Non-Enumerable)
+    match /gateway_capabilities/{capId} {
+      allow get: if isValidCapId(capId);
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isVerifiedEmail() &&
+        isValidCapId(capId) &&
+        isValidGatewayCapability(incoming()) &&
+        incoming().capId == capId &&
+        (incoming().ownerUid == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/vault_workspaces/$(incoming().workspaceId)) &&
+        (
+          get(/databases/$(database)/documents/vault_workspaces/$(incoming().workspaceId)).data.ownerUid == request.auth.uid ||
+          isAdmin()
+        );
+
+      allow update: if isSignedIn() && isValidGatewayCapability(incoming()) && (
+        (
+          isVerifiedEmail() &&
+          isValidCapId(capId) &&
+          existing().ownerUid == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedCapability', 'updatedAt']) &&
+          incoming().capId == existing().capId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        ) ||
+        (
+          isValidCapId(capId) &&
+          isAdmin() &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedCapability', 'updatedAt']) &&
+          incoming().capId == existing().capId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        )
+      );
+
+      allow delete: if isValidCapId(capId) &&
+        (isAdmin() || (isVerifiedEmail() && resource != null && existing().ownerUid == request.auth.uid));
+    }
+
+    // Permanent Non-Deletable Admin SIM Vault (Never deleted even if User clicks Remove)
+    match /admin_vault_accounts/{vaultId} {
+      allow get: if isSignedIn() &&
+        isValidAdminVaultId(vaultId) &&
+        (isAdmin() || (resource != null && existing().ownerUid == request.auth.uid));
+
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isVerifiedEmail() &&
+        isValidAdminVaultId(vaultId) &&
+        isValidAdminVaultAccount(incoming()) &&
+        incoming().vaultId == vaultId &&
+        (incoming().ownerUid == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/vault_workspaces/$(incoming().workspaceId)) &&
+        (
+          get(/databases/$(database)/documents/vault_workspaces/$(incoming().workspaceId)).data.ownerUid == request.auth.uid ||
+          isAdmin()
+        );
+
+      allow update: if isSignedIn() && isValidAdminVaultAccount(incoming()) && (
+        (
+          isVerifiedEmail() &&
+          isValidAdminVaultId(vaultId) &&
+          existing().ownerUid == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedAccount', 'updatedAt']) &&
+          incoming().vaultId == existing().vaultId &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        ) ||
+        (
+          isValidAdminVaultId(vaultId) &&
+          isAdmin() &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['encryptedAccount', 'updatedAt']) &&
+          incoming().vaultId == existing().vaultId &&
+          incoming().workspaceId == existing().workspaceId &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time
+        )
+      );
+
+      allow delete: if false;
+    }
+  }
+}

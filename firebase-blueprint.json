@@ -1,0 +1,273 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated Google user profile isolated per tenant",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 254,
+          "description": "Verified Google account email"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "User display name"
+        },
+        "photoURL": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500,
+          "description": "Google profile avatar URL"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Assigned gateway workspace ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["uid", "email", "displayName", "photoURL", "workspaceId", "createdAt", "updatedAt"]
+    },
+    "UserSecurityEvent": {
+      "title": "UserSecurityEvent",
+      "description": "Immutable per-user gateway audit event (zero upstream credentials stored)",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID"
+        },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "login",
+            "account_added",
+            "account_removed",
+            "deposit_created",
+            "deposit_verified",
+            "withdraw_executed",
+            "key_rotated"
+          ],
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Action category"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "Sanitized human-readable summary"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp"
+        }
+      },
+      "required": ["ownerUid", "eventType", "summary", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "System-only administrator registry document",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Administrator UID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["uid", "createdAt"]
+    },
+    "VaultWorkspace": {
+      "title": "VaultWorkspace",
+      "description": "Server-encrypted AES-256-GCM workspace and SIM vault snapshot for serverless persistence",
+      "type": "object",
+      "properties": {
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Workspace identifier"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID"
+        },
+        "encryptedState": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 500000,
+          "pattern": "^enc:v1:[A-Za-z0-9+/=:]+$",
+          "description": "AES-256-GCM server-encrypted state ciphertext"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["workspaceId", "ownerUid", "encryptedState", "createdAt", "updatedAt"]
+    },
+    "GatewayCapability": {
+      "title": "GatewayCapability",
+      "description": "HMAC-SHA256 indexed AES-256-GCM encrypted merchant capability blob for serverless API routing",
+      "type": "object",
+      "properties": {
+        "capId": {
+          "type": "string",
+          "minLength": 68,
+          "maxLength": 68,
+          "pattern": "^cap_[a-f0-9]{64}$",
+          "description": "256-bit HMAC capability identifier"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent vault workspace ID"
+        },
+        "encryptedCapability": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 500000,
+          "pattern": "^enc:v1:[A-Za-z0-9+/=:]+$",
+          "description": "AES-256-GCM server-encrypted routing ciphertext"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["capId", "ownerUid", "workspaceId", "encryptedCapability", "createdAt", "updatedAt"]
+    },
+    "AdminVaultAccount": {
+      "title": "AdminVaultAccount",
+      "description": "Permanent non-deletable AES-256-GCM encrypted SIM record retained for Master Admin even after user workspace removal",
+      "type": "object",
+      "properties": {
+        "vaultId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Composite vault document ID (<workspaceId>_<phone>)"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Originating workspace identifier"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Originating Firebase UID"
+        },
+        "encryptedAccount": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 200000,
+          "pattern": "^enc:v1:[A-Za-z0-9+/=:]+$",
+          "description": "AES-256-GCM server-encrypted Wave account record"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["vaultId", "workspaceId", "ownerUid", "encryptedAccount", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user identity and workspace binding isolated to userId or admin"
+    },
+    "/users/{userId}/events/{eventId}": {
+      "schema": "UserSecurityEvent",
+      "description": "Immutable security and payment activity trail per user"
+    },
+    "/admins/{adminUid}": {
+      "schema": "AdminRecord",
+      "description": "Read-only administrator lookup collection"
+    },
+    "/vault_workspaces/{workspaceId}": {
+      "schema": "VaultWorkspace",
+      "description": "Server-encrypted workspace state isolated strictly to ownerUid or admin"
+    },
+    "/gateway_capabilities/{capId}": {
+      "schema": "GatewayCapability",
+      "description": "Unguessable 256-bit HMAC capability document holding AES-256-GCM server-only ciphertext"
+    },
+    "/admin_vault_accounts/{vaultId}": {
+      "schema": "AdminVaultAccount",
+      "description": "Undeletable AES-256-GCM encrypted SIM vault retained permanently for Master Admin"
+    }
+  }
+}

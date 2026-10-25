@@ -1,0 +1,12 @@
+{
+  "projectId": "payment-gateway-web",
+  "appId": "1:124993636996:web:eb946895965bade5df10d1",
+  "apiKey": "AIzaSyDYIF3ylAPpoB73axm064A8xOgwpG2rSfQ",
+  "authDomain": "payment-gateway-web.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-wavemoneypayment-2c0c1daa-22d4-403d-8bdc-503247057583",
+  "storageBucket": "payment-gateway-web.firebasestorage.app",
+  "messagingSenderId": "124993636996",
+  "measurementId": "",
+  "oAuthClientId": "124993636996-f5v6vlqreg2mri6rmqi1vae3dts2ac1m.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
+}

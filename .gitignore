@@ -1,0 +1,12 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+*.db
+*.sqlite*
+.vault.key
+gateway_store.json
+.env*
+!.env.example
