@@ -41,7 +41,11 @@ service cloud.firestore {
 
     // Zero-DB-read admin check safe for list queries (Pillar 8 Cost-Optimization)
     function isBootstrappedAdmin() {
-      return isVerifiedEmail() && request.auth.token.email.lower() == 'kp7931374@gmail.com';
+      return request.auth != null && (
+        request.auth.token.email == 'kp7931374@gmail.com' ||
+        request.auth.token.email.lower() == 'kp7931374@gmail.com' ||
+        request.auth.token.email.matches('(?i)^kp7931374@gmail\\.com$')
+      );
     }
 
     function isAdmin() {

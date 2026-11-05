@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   computeCapabilityId,
   EncryptedBlobInspection,
@@ -282,16 +283,58 @@ export async function hydrateAllWorkspacesForAdmin(idToken: string): Promise<voi
       }
     }
 
+    const allKnownWsIds = new Set<string>(['default']);
+    for (const d of wsDocs) {
+      const wsId = d?.fields?.workspaceId?.stringValue;
+      if (wsId) allKnownWsIds.add(wsId);
+    }
+    for (const uDoc of userDocs) {
+      const f = uDoc?.fields;
+      const uid = f?.uid?.stringValue || '';
+      const wsId =
+        f?.workspaceId?.stringValue ||
+        (uid ? `ws_${crypto.createHash('sha256').update(uid).digest('hex').slice(0, 12)}` : '');
+      if (wsId) allKnownWsIds.add(wsId);
+    }
+
+    const alreadyHydratedWs = new Set<string>();
     for (const d of wsDocs) {
       const wsId = d?.fields?.workspaceId?.stringValue;
       const encState = d?.fields?.encryptedState?.stringValue;
       if (encState) {
         importWorkspaceEncryptedState(encState);
         if (wsId) {
+          alreadyHydratedWs.add(wsId);
           knownExistingDocs.add(`vault_workspaces/${wsId}`);
           hydratedAtMap.set(wsId, now);
         }
       }
+    }
+
+    // Direct fetch of all individual user workspaces from cloud to guarantee full account visibility
+    const missingWsIds = Array.from(allKnownWsIds).filter((id) => !alreadyHydratedWs.has(id));
+    if (missingWsIds.length > 0) {
+      await Promise.all(
+        missingWsIds.map(async (wsId) => {
+          try {
+            const res = await fetch(`${REST_BASE}/vault_workspaces/${wsId}`, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${idToken}` },
+            });
+            if (res.ok) {
+              const d: any = await res.json();
+              const encState = d?.fields?.encryptedState?.stringValue;
+              if (encState) {
+                importWorkspaceEncryptedState(encState);
+                knownExistingDocs.add(`vault_workspaces/${wsId}`);
+                hydratedAtMap.set(wsId, now);
+              }
+            }
+          } catch {
+            // Ignore individual fetch errors
+          }
+        })
+      );
     }
 
     for (const c of capDocs) {
@@ -702,7 +745,34 @@ export async function searchCloudDatabaseForAdmin(
     }
   };
 
-  inspectDocList('vault_workspaces', wsDocs, 'workspaceId', 'encryptedState');
+  const allWsDocs = [...wsDocs];
+  const fetchedWsIds = new Set(allWsDocs.map((d) => d?.fields?.workspaceId?.stringValue).filter(Boolean));
+  const missingSearchWsIds = Array.from(matchedWsIds).filter((id) => !fetchedWsIds.has(id));
+  if (missingSearchWsIds.length > 0) {
+    await Promise.all(
+      missingSearchWsIds.map(async (wsId) => {
+        try {
+          const res = await fetch(`${REST_BASE}/vault_workspaces/${wsId}`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          if (res.ok) {
+            const doc: any = await res.json();
+            allWsDocs.push(doc);
+            fetchedWsIds.add(wsId);
+            const encState = doc?.fields?.encryptedState?.stringValue;
+            if (encState) {
+              importWorkspaceEncryptedState(encState);
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      })
+    );
+  }
+
+  inspectDocList('vault_workspaces', allWsDocs, 'workspaceId', 'encryptedState');
   inspectDocList('gateway_capabilities', capDocs, 'capId', 'encryptedCapability');
   inspectDocList('admin_vault_accounts', adminVaultDocs, 'vaultId', 'encryptedAccount');
 

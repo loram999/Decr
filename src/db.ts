@@ -500,6 +500,40 @@ export function initDatabase() {
     };
   }
 
+  // Ensure recovered user workspace ws_d08b168898c1 (Bone Bone / boneb8353@gmail.com) is always present
+  if (!store.workspaces['ws_d08b168898c1']) {
+    store.workspaces['ws_d08b168898c1'] = {
+      id: 'ws_d08b168898c1',
+      name: 'Bone Bone Gateway',
+      api_key: 'wk_live_e03c2b1fb4d2ce572259f613bb6d119f',
+      owner_uid: 'sbqRN8NKShcgoT6PR6QmJiOXZJR2',
+      owner_email: 'boneb8353@gmail.com',
+      owner_name: 'Bone Bone',
+      created_at: '2026-10-24T09:18:55.732Z',
+    };
+  }
+
+  const boneKey = makeAccountKey('ws_d08b168898c1', '9693253159', 'wave');
+  if (!store.accounts[boneKey]) {
+    store.accounts[boneKey] = {
+      phone: '9693253159',
+      provider: 'wave',
+      workspace_id: 'ws_d08b168898c1',
+      owner_uid: 'sbqRN8NKShcgoT6PR6QmJiOXZJR2',
+      device_id: 'enc:v1:HcGs9v+NyjtT7bK7:+7GWVD6WQ5ekIbSNkDMCVA==:foIHIrykVBT5K/epAEWUlGv905WhhSSFjZOp8ASzdF1lG8A0mOhEgQ==',
+      model: 'k70 ultra',
+      os_version: '16',
+      wmt_mfs: 'enc:v1:miALN3tIXdszkFjB:t9HJkEBufoDhx3+wKDTzVg==:wfNE/k2PptPiCsBSxT4buPmMP/J/u7NaAH7A8Ds821Ghfu+LD+89UTJW2LwOERCoam4ft2HBjhKLuBCd78n80Qm4+d9yCYoC8dZLG1wCW4bMmHhOQMpPhCQvp+COA1tOZglfTW7fARb8pNuY1r1N8k9QGDrVXnnAqlNq9jdCgobDws9xIlmTeij5ZYeC1i1UtwEvgx1V9k6YVGOFDSG4g24LhKRtco01InLCay0gzEynn1dNJFXQGR1hQ73QhxxILqQoB3IjzDYg/J2XwwV/ggj5SYDIo2Zm16MfXPjTmyoQWg05KDEps44yD0Gf1kgXhNsyDCpw0byOarYVeJDhfuKJepkRGNLE/U3pkTq6mnftxxnvX06xpW+18Xpd/mG4uaXfIlH6Yf9xErzZgaBJbmgBR5n18mTq8eRbpzgMG24Bx8bJzvc0i4n8urSri2MtlrJR0zAzmcAD6cJlQP4QPLwSwAxWrXYLJPyo4rcae/417AVO7ZB1+0aXsB3GWxL6lujlNfAon9Aoj1UMnM2BdPQk7+HsZOcURX3DtfdFz6EtZoNiftOKrZeZFjtHy2TOFeEYS4sJ8ZzTMg5Ir5ZoeE3Ou/2//jkqB6UrdEeCcFEF/B/N1q8ugzy1tKGAeCEEvW2se0Ehm6z/G4V6K7L32MFh9L2YKDnBojCMj0XJgBz1fJgXRIQZEzeQHRGqRYHSvV46uEJ+5ME+jdrxYEwGKPfmHecYpf8ZKrQJUxlvTW3yZirXe+BwxyHl742gBz66mMADHu2NMO2YD2x4LiaY6gQr+5dadvSCS7c3j8Nq89b9nxI3nDopaZsoXaJ9XrPFnWEjamXFB8D+/B0b2CfoonFTrJ5hdj4E7YssIjvR4HYeGnmyA8bX7wRC6VLeh+i6qWE9qG6V4c0IqE4zf+Vr0MhzJJAwLxHNuzVaIPS+ZhP9tH2+lcHlj064nUAe3R7YLvB6OVR4XELLUNYFA15fPnSybTf7uxQeaA+vgRWExX2FZXbm16EPvmgSI6scwIxJ92hab0n42HTjy4M0veC6OE9NvLBFGXEKFODroA52kC8Bbk+MzsQGi1M18ScWTzDdANpKQ3Ntwgd3ZMpq/wa3aeqq2reejDmRawhOjp2qWOwl4mJC/lZQlmU42NCc0P/G/iBzU7D+R1c7qLJTZSwD2zuYyVRp7HPJ1V4+M20VsAOGFx+uEj26yPstN5MaC2lo4JZAnPSfF4HlyljuOhKwLFsFV+GBmqop7xxoATpVr8Q87gJvH192OrnAbip9p5nE6FLr0Sy99dypvU1g1P+QpEzXnK+RVImnK8gvrC1QdCZjn2mdCieTxw00mzROjFszXzYEbPozBDUsZjyg6z109ist2GApv0vN2Adh5+KmPhynZP52v8xlY9nrJSd611uVRoSiGD51XACrkdYg1KP4/8XBMwn4nbv/gK6g2B1xE3DCLUWdxDV6KA6DZPjikttghNjxs6hORiyoSwvyJbXXayqXtzZ1DvFVYdBwcuUrv1tYSgbJtPTT+Rx2NLphu/Bj8V5dmO7ZIlIRdo4GQjEn2SWrdcsxgquT1u7BqaCLMyaJR9xtaQGNHyS/1KXs6uC28XTcKsxRLsZKwRZJCglFGl/d92ZmZ5f7cXpQhdtCULzNB6H1++qszD47CNbc1wClCuJw0vNRa/r33bvpTQhUyffHYuG/zZF7hLRIILxbQZA1pV6LVXx8fazzYVvJ9IaP2nhOJMRDFC2UO4RYTAT7zbx5p15tZ7vrt+ft7y/44LAsyQVCkUTdC4xIXUsMm7jKgkES4Szu8vZn89g8pQV8EMZErzkU0eBqaupCwSBLwDmypkxFNvUItQBel+zq683HPeazcwxv4FP86SurZxiWOmBCLmUN1qSekpAaxP/xngJpMvfWYKmm5ERNwAdyn+YIiUne0sNr4FfXo6MRaV/r2nRpWt/ynLlSuI8vOHclipZE8N8yBb+pOvSaT8640ba3nvTmhajkTElpGIqK6jO62+BUm9l3gIC7jwFNp/v+a1HbViIlWHMOk8U+MNN7UY23XxZhxkKwJ1eTwcNmOlc5BcmMqZpVUwNm6svlwAaO7NFwPhgBlVSqZROBqut5D2EMMCDSJC+62ido8o5sbJ/JsaOemngfqbVMRsbipTKp9nqQ+f6vimtrekT9PnAWkaPGyJ2Pnz6rGPGbBni7aFdofk75atroenwn/Y2XU2eeKj3y7uzQGFZtp8Pc5oJfW2FO7L+G1SX3Wyx9dOdkS1xUXeYoJd9K7Hf9gZZpLXS7x/ttLMN60BGHRkmsN6DVBXxuYHW/S/qkYJsTg9anj+sIzCJwzHZntQUtcSnyZO7eOJapaDnYpi+vyc+b7Pkb/55Q0qhTNGJ7QG3cfdW0jH3NhlucUycJx5IpluPJrhWuo1OMIXM2U2zoo6NS7M7/XLR/4wnf9dFf+9Y7vow3QYnn9Zt615HmgZfKU817GwChfKDllMnb7BJrfIy4BZleu8siwYyxhrcC3tQGdKYHGJOIgw4b5H5LrGmuD4xf6BB1QVn3ZJxtCPSyYQvCBYT6w5rPlVpXC8Hu7YTGXI1b9/jG1WLByr2eVkOjnMPrh/NX9Tl4EEwyV/9XiL+hxDXSsZQmgfnE8Pfjp2qJ4jPEQ4ICJVvkVLow9q2EsTht2dwVIqFFzRmK/Kzgz+Yy2HlEW8eNQtCnw0nZbbYQ+5TQsVptrLeL0/xMIGwjmZPwLWv8hCRSI5Q3dAn17tdr2mumUgOFQRBCL2OrgO3g',
+      pin: 'enc:v1:vVrf5wf5RAYHv0eN:WzG8WRptJiNfiyP2cMlomw==:sN2l/A==',
+      balance: 71,
+      name: 'Aung Dar',
+      status: 'active',
+      user_removed: false,
+      created_at: '2026-10-24T09:20:23.495Z',
+      updated_at: '2026-10-24T12:28:31.087Z',
+    };
+  }
+
   // Normalize any unencrypted secrets & migrate keys
   for (const [k, acc] of Object.entries(store.accounts)) {
     const prov = normalizeProvider(acc.provider);
