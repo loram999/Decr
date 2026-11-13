@@ -113,6 +113,7 @@ export const WaveAccountManager: React.FC<WaveAccountManagerProps> = ({
   const [historyList, setHistoryList] = useState<TransactionHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [historyWarning, setHistoryWarning] = useState('');
 
   // Delete Confirmation Modal State
   const [deleteTarget, setDeleteTarget] = useState<WaveAccount | null>(null);
@@ -657,6 +658,7 @@ export const WaveAccountManager: React.FC<WaveAccountManagerProps> = ({
     setHistoryAcc(acc);
     setHistoryList([]);
     setHistoryError('');
+    setHistoryWarning('');
     setHistoryLoading(true);
 
     try {
@@ -668,6 +670,9 @@ export const WaveAccountManager: React.FC<WaveAccountManagerProps> = ({
         setHistoryError(data.message || 'မှတ်တမ်း ရယူ၍ မရပါ။');
       } else {
         setHistoryList(data.history || []);
+        if (data.warning) {
+          setHistoryWarning(data.warning);
+        }
       }
     } catch (err: any) {
       setHistoryError(err.message);
@@ -1840,14 +1845,23 @@ export const WaveAccountManager: React.FC<WaveAccountManagerProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
+              {historyWarning && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
+                  ⚠️ {historyWarning}
+                </div>
+              )}
               {historyLoading ? (
                 <div className="py-10 text-center space-y-2">
                   <RefreshCw className="w-5 h-5 text-black animate-spin mx-auto" />
                   <div className="text-xs text-zinc-600">မှတ်တမ်း ဆွဲယူနေပါသည်...</div>
                 </div>
               ) : historyError ? (
-                <div className="p-4 rounded-xl bg-white border-2 border-black text-xs text-black font-medium leading-relaxed">
-                  {historyError}
+                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-300 text-xs text-zinc-900 font-medium leading-relaxed space-y-1.5">
+                  <div className="font-bold text-black flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Session သတိပေးချက်</span>
+                  </div>
+                  <p>{historyError}</p>
                 </div>
               ) : historyList.length === 0 ? (
                 <div className="py-10 text-center text-xs text-zinc-500">

@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import crypto from 'crypto';
-import type { WalletProvider } from './types.js';
+import type { WalletProvider, TransactionHistoryItem } from './types.js';
 
 export type { WalletProvider };
 
@@ -1227,6 +1227,37 @@ export function listGatewayLogs(limitCount: number = 80): GatewayLogRow[] {
 export function clearGatewayLogs() {
   store.gateway_logs = [];
   persistLocalStore();
+}
+
+export function getLocalAccountHistory(phone: string, workspaceId?: string): TransactionHistoryItem[] {
+  const clean = String(phone || '').trim().replace(/^0+/, '');
+  const items: TransactionHistoryItem[] = [];
+
+  for (const t of Object.values(store.auth_tokens)) {
+    if (workspaceId && t.workspace_id && t.workspace_id !== workspaceId) continue;
+    const tPhone = String(t.phone_number || '').trim().replace(/^0+/, '');
+    const tReceiver = String(t.receiver || '').trim().replace(/^0+/, '');
+    const tFrom = String(t.executed_from || '').trim().replace(/^0+/, '');
+
+    const isMatch = tPhone === clean || tReceiver === clean || tFrom === clean;
+    if (!isMatch) continue;
+
+    const isOutflow = t.type === 'withdraw' || tFrom === clean;
+    const direction: 'CR' | 'DR' = isOutflow ? 'DR' : 'CR';
+    const amount = Number(t.amount) || 0;
+    const title = `${t.type === 'deposit' ? 'Deposit' : 'Withdrawal'} (${t.status})`;
+    const dateStr = t.created_at ? new Date(t.created_at).toISOString().replace('T', ' ').slice(0, 19) : '';
+
+    items.push({
+      transId: t.trx_id || t.token.slice(0, 16),
+      amount,
+      direction,
+      title: t.merchant_name ? `${title} · ${t.merchant_name}` : title,
+      time: dateStr,
+    });
+  }
+
+  return items.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
 }
 
 // =============================================================================

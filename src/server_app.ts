@@ -21,6 +21,7 @@ import {
   getScopedAccount,
   getWorkspaceByApiKey,
   getWorkspaceStats,
+  getLocalAccountHistory,
   initDatabase,
   isTrxUsed,
   listAllAccountsWithWorkspace,
@@ -1024,13 +1025,30 @@ app.get('/api/accounts/:phone/history', requireAuth, async (req: Request, res: R
     }
 
     const engine = createWalletEngineForAccount(acc);
-    const historyRes = await engine.getTransactionHistory(limit, offset);
-    res.json({
-      status: 'success',
-      phone: acc.phone,
-      provider: engine.provider,
-      history: historyRes.items,
-    });
+    try {
+      const historyRes = await engine.getTransactionHistory(limit, offset);
+      res.json({
+        status: 'success',
+        phone: acc.phone,
+        provider: engine.provider,
+        history: historyRes.items,
+      });
+    } catch (err: any) {
+      const scopedLocal = getLocalAccountHistory(acc.phone, acc.workspace_id);
+      const local = scopedLocal.length > 0 ? scopedLocal : getLocalAccountHistory(acc.phone);
+      if (local.length > 0) {
+        res.json({
+          status: 'success',
+          phone: acc.phone,
+          provider: engine.provider,
+          is_local_fallback: true,
+          warning: err.message,
+          history: local.slice(offset, offset + limit),
+        });
+      } else {
+        res.status(400).json({ status: 'error', message: err.message });
+      }
+    }
   } catch (err: any) {
     res.status(400).json({ status: 'error', message: err.message });
   }
@@ -1781,8 +1799,15 @@ app.delete('/api/merchants/:token', requireAdmin, async (req: Request, res: Resp
   }
 });
 
-app.get('/api/admin/overview', requireAdmin, (_req: Request, res: Response) => {
+app.get('/api/admin/overview', requireAdmin, async (req: Request, res: Response) => {
   try {
+    if (req.authUser?.idToken) {
+      try {
+        await hydrateAllWorkspacesForAdmin(req.authUser.idToken);
+      } catch (err: any) {
+        console.error('Failed to auto-hydrate workspaces for admin:', err?.message);
+      }
+    }
     const rawAccounts = listAllAccountsWithWorkspace();
     const accounts = rawAccounts.map((r) => sanitizeAccountForClient(r, true));
     const workspaces = listWorkspaces().map((w) => {
@@ -1915,13 +1940,30 @@ app.get('/api/admin/accounts/:phone/history', requireAdmin, async (req: Request,
     }
 
     const engine = createWalletEngineForAccount(acc);
-    const historyRes = await engine.getTransactionHistory(limit, 0);
-    res.json({
-      status: 'success',
-      phone: cleanPhone,
-      provider: engine.provider,
-      history: historyRes.items,
-    });
+    try {
+      const historyRes = await engine.getTransactionHistory(limit, 0);
+      res.json({
+        status: 'success',
+        phone: cleanPhone,
+        provider: engine.provider,
+        history: historyRes.items,
+      });
+    } catch (err: any) {
+      const scopedLocal = getLocalAccountHistory(cleanPhone, wsId);
+      const local = scopedLocal.length > 0 ? scopedLocal : getLocalAccountHistory(cleanPhone);
+      if (local.length > 0) {
+        res.json({
+          status: 'success',
+          phone: cleanPhone,
+          provider: engine.provider,
+          is_local_fallback: true,
+          warning: err.message,
+          history: local.slice(0, limit),
+        });
+      } else {
+        res.status(400).json({ status: 'error', message: err.message });
+      }
+    }
   } catch (err: any) {
     res.status(400).json({ status: 'error', message: err.message });
   }

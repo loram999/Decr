@@ -65,6 +65,12 @@ function sanitizeUpstreamMessage(msg: unknown, fallback: string): string {
   if (!raw || raw.startsWith('<') || /wavemoney|8100|wmt-mfs|tnx-histories|cloudflare/i.test(raw)) {
     return fallback;
   }
+  if (/invalid nonce/i.test(raw)) {
+    return 'WavePay Session သက်တမ်းကုန်ဆုံးသွားပါပြီ (Invalid nonce)။ သက်ဆိုင်ရာ အကောင့်ပိုင်ရှင်ထံမှ OTP / Login ပြန်လည်ရယူရန် လိုအပ်ပါသည်။';
+  }
+  if (/invalid session/i.test(raw) || /session expired/i.test(raw) || /unauthorized/i.test(raw)) {
+    return 'WavePay Session သက်တမ်းကုန်ဆုံးသွားပါပြီ (Session expired)။ Login ပြန်လည်ဝင်ရောက်ပေးရန် လိုအပ်ပါသည်။';
+  }
   return raw.slice(0, 180);
 }
 
@@ -365,7 +371,7 @@ export class WaveWalletEngine {
 
     const res = await this.request('GET', 'v2/mfs-customer/wallet-balance');
     if (!res.ok) {
-      if (res.status === 401) {
+      if (res.status === 401 || /invalid session|invalid nonce|session expired/i.test(String(res.data?.message || ''))) {
         updateAccountCredentials(this.phone, { status: 'expired' }, this.workspaceId, 'wave');
       }
       throw new Error(
@@ -538,7 +544,7 @@ export class WaveWalletEngine {
       }
 
       if (!response.ok || !parsed) {
-        if (response.status === 401) {
+        if (response.status === 401 || /invalid nonce|invalid session|session expired/i.test(String(parsed?.message || ''))) {
           updateAccountCredentials(this.phone, { status: 'expired' }, this.workspaceId, 'wave');
         }
         throw new Error(

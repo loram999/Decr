@@ -110,6 +110,7 @@ export const AdminPanel990: React.FC<AdminPanel990Props> = ({ onRefreshGlobal })
   const [histItems, setHistItems] = useState<TransactionHistoryItem[]>([]);
   const [histLoading, setHistLoading] = useState(false);
   const [histError, setHistError] = useState('');
+  const [histWarning, setHistWarning] = useState('');
 
   const [syncingKey, setSyncingKey] = useState<string | null>(null);
 
@@ -279,6 +280,7 @@ export const AdminPanel990: React.FC<AdminPanel990Props> = ({ onRefreshGlobal })
     setHistTarget({ phone: acc.phone, provider: prov, workspaceId: acc.workspace_id });
     setHistItems([]);
     setHistError('');
+    setHistWarning('');
     setHistLoading(true);
     try {
       const params = new URLSearchParams({ limit: '15', provider: prov });
@@ -289,6 +291,9 @@ export const AdminPanel990: React.FC<AdminPanel990Props> = ({ onRefreshGlobal })
         setHistError(data.message || 'မှတ်တမ်း ရယူ၍ မရပါ။');
       } else {
         setHistItems(data.history || []);
+        if (data.warning) {
+          setHistWarning(data.warning);
+        }
       }
     } catch (err: any) {
       setHistError(err.message);
@@ -729,15 +734,27 @@ export const AdminPanel990: React.FC<AdminPanel990Props> = ({ onRefreshGlobal })
       {subTab === 'accounts' && (
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ဖုန်းနံပါတ်၊ Wallet၊ အမည် သို့မဟုတ် User Email ဖြင့် ရှာရန်..."
-                className="w-full pl-9 pr-3 py-2 bg-white border border-zinc-300 rounded-lg text-xs text-black placeholder:text-zinc-400 focus:outline-none focus:border-black"
-              />
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ဖုန်းနံပါတ်၊ Wallet၊ အမည် သို့မဟုတ် User Email ဖြင့် ရှာရန်..."
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-zinc-300 rounded-lg text-xs text-black placeholder:text-zinc-400 focus:outline-none focus:border-black"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => fetchAdminOverview()}
+                className="px-3 py-2 bg-white hover:bg-zinc-100 border border-zinc-300 rounded-lg text-xs font-semibold text-black flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                title="Cloud Database မှ အကောင့်အားလုံး ပြန်လည်ဆွဲယူရန်"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Sync All</span>
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -1353,11 +1370,20 @@ export const AdminPanel990: React.FC<AdminPanel990Props> = ({ onRefreshGlobal })
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2.5">
+              {histWarning && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
+                  ⚠️ {histWarning}
+                </div>
+              )}
               {histLoading ? (
                 <div className="py-10 text-center text-xs text-zinc-600">Loading history...</div>
               ) : histError ? (
-                <div className="p-4 rounded-xl bg-white border-2 border-black text-xs text-black font-medium">
-                  {histError}
+                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-300 text-xs text-zinc-900 font-medium leading-relaxed space-y-1.5">
+                  <div className="font-bold text-black flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Session သတိပေးချက်</span>
+                  </div>
+                  <p>{histError}</p>
                 </div>
               ) : histItems.length === 0 ? (
                 <div className="py-10 text-center text-xs text-zinc-500">မှတ်တမ်း မရှိပါ။</div>

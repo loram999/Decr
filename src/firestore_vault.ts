@@ -223,6 +223,29 @@ export async function hydrateWorkspaceFromCloud(
 }
 
 async function fetchAllCollectionDocs(collectionName: string, idToken: string): Promise<any[]> {
+  try {
+    const res = await fetch(`${REST_BASE}:runQuery`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: collectionName }],
+        },
+      }),
+    });
+    if (res.ok) {
+      const list: any = await res.json();
+      if (Array.isArray(list)) {
+        return list.filter((item: any) => item.document).map((item: any) => item.document);
+      }
+    }
+  } catch {
+    // Fallback to GET pagination
+  }
+
   const allDocs: any[] = [];
   let pageToken = '';
   for (let page = 0; page < 10; page++) {
